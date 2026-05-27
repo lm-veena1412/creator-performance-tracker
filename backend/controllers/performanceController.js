@@ -9,6 +9,7 @@ const getAllPerformanceLogs = (req, res) => {
   `;
   db.query(query, (err, results) => {
     if (err) {
+      console.error('Get all performance logs error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     res.json(results);
@@ -25,6 +26,7 @@ const getPerformanceLogById = (req, res) => {
   `;
   db.query(query, [id], (err, results) => {
     if (err) {
+      console.error('Get performance log by ID error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (results.length === 0) {
@@ -45,6 +47,7 @@ const getPerformanceLogsByCreatorId = (req, res) => {
   `;
   db.query(query, [creatorId], (err, results) => {
     if (err) {
+      console.error('Get performance logs by creator ID error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     res.json(results);
@@ -56,6 +59,7 @@ const createPerformanceLog = (req, res) => {
   const query = 'INSERT INTO performance_logs (creator_id, provided_link, posted_link, views_count) VALUES (?, ?, ?, ?)';
   db.query(query, [creator_id, provided_link, posted_link, views_count || 0], (err, result) => {
     if (err) {
+      console.error('Create performance log error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     res.status(201).json({ id: result.insertId, creator_id, provided_link, posted_link, views_count });
@@ -68,6 +72,7 @@ const updatePerformanceLog = (req, res) => {
   const query = 'UPDATE performance_logs SET creator_id = ?, provided_link = ?, posted_link = ?, views_count = ? WHERE id = ?';
   db.query(query, [creator_id, provided_link, posted_link, views_count, id], (err, result) => {
     if (err) {
+      console.error('Update performance log error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (result.affectedRows === 0) {
@@ -82,6 +87,7 @@ const deletePerformanceLog = (req, res) => {
   const query = 'DELETE FROM performance_logs WHERE id = ?';
   db.query(query, [id], (err, result) => {
     if (err) {
+      console.error('Delete performance log error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (result.affectedRows === 0) {
@@ -94,13 +100,13 @@ const deletePerformanceLog = (req, res) => {
 const getDashboardStats = (req, res) => {
   const queries = [
     'SELECT COUNT(*) as total FROM creators',
-    'SELECT COUNT(*) as total FROM performance_logs WHERE provided_link IS NOT NULL AND provided_link != ""',
-    'SELECT COUNT(*) as total FROM performance_logs WHERE posted_link IS NOT NULL AND posted_link != ""',
-    'SELECT SUM(views_count) as total FROM performance_logs'
+    "SELECT COUNT(*) as total FROM performance_logs WHERE provided_link IS NOT NULL AND provided_link != ''",
+    "SELECT COUNT(*) as total FROM performance_logs WHERE posted_link IS NOT NULL AND posted_link != ''",
+    'SELECT COALESCE(SUM(views_count), 0) as total FROM performance_logs'
   ];
 
   Promise.all(
-    queries.map(query => 
+    queries.map(query =>
       new Promise((resolve, reject) => {
         db.query(query, (err, results) => {
           if (err) reject(err);
@@ -117,7 +123,28 @@ const getDashboardStats = (req, res) => {
     });
   })
   .catch(err => {
+    console.error('Dashboard stats error:', err);
     res.status(500).json({ message: 'Database error' });
+  });
+};
+
+const getMonthlyStats = (req, res) => {
+  const query = `
+    SELECT
+      DATE_FORMAT(date_logged, '%Y-%m') as month,
+      COALESCE(SUM(views_count), 0) as total_views
+    FROM performance_logs
+    WHERE date_logged IS NOT NULL
+    GROUP BY DATE_FORMAT(date_logged, '%Y-%m')
+    ORDER BY month ASC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Monthly stats error:', err);
+      return res.status(500).json({ message: 'Database error' });
+    }
+    res.json(results);
   });
 };
 
@@ -128,5 +155,6 @@ module.exports = {
   createPerformanceLog,
   updatePerformanceLog,
   deletePerformanceLog,
-  getDashboardStats
+  getDashboardStats,
+  getMonthlyStats
 };

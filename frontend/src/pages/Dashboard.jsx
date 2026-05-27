@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Users, Link as LinkIcon, Eye, LogOut, Plus } from 'lucide-react';
+import { Users, Link as LinkIcon, Eye, LogOut, Plus, Pencil, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CreatorDetailsModal from '../components/CreatorDetailsModal';
 import AddLogModal from '../components/AddLogModal';
+import EditLogModal from '../components/EditLogModal';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -14,10 +16,13 @@ const Dashboard = () => {
     totalViews: 0
   });
   const [performanceLogs, setPerformanceLogs] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCreator, setSelectedCreator] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddLogModalOpen, setIsAddLogModalOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -25,13 +30,15 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, logsRes] = await Promise.all([
+      const [statsRes, logsRes, monthlyRes] = await Promise.all([
         axios.get('http://localhost:5000/api/performance/stats'),
-        axios.get('http://localhost:5000/api/performance')
+        axios.get('http://localhost:5000/api/performance'),
+        axios.get('http://localhost:5000/api/performance/monthly-stats')
       ]);
       
       setStats(statsRes.data);
       setPerformanceLogs(logsRes.data);
+      setMonthlyStats(monthlyRes.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -142,6 +149,50 @@ const Dashboard = () => {
           />
         </div>
 
+        {/* Monthly Stats Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Monthly Views Tracker
+            </h2>
+          </div>
+          
+          {monthlyStats.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              No monthly data available yet. Add performance logs to see the chart.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyStats}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                />
+                <YAxis 
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar 
+                  dataKey="total_views" 
+                  fill="#3b82f6" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
         {/* Performance Logs Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -238,6 +289,16 @@ const Dashboard = () => {
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteLog(log.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
@@ -268,6 +329,14 @@ const Dashboard = () => {
       <AddLogModal
         isOpen={isAddLogModalOpen}
         onClose={() => setIsAddLogModalOpen(false)}
+        onSuccess={fetchDashboardData}
+      />
+
+      {/* Edit Log Modal */}
+      <EditLogModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        log={selectedLog}
         onSuccess={fetchDashboardData}
       />
     </div>

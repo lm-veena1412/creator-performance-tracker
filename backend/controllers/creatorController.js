@@ -4,6 +4,7 @@ const getAllCreators = (req, res) => {
   const query = 'SELECT * FROM creators ORDER BY created_at DESC';
   db.query(query, (err, results) => {
     if (err) {
+      console.error('Get all creators error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     res.json(results);
@@ -15,6 +16,7 @@ const getCreatorById = (req, res) => {
   const query = 'SELECT * FROM creators WHERE id = ?';
   db.query(query, [id], (err, results) => {
     if (err) {
+      console.error('Get creator by ID error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (results.length === 0) {
@@ -29,6 +31,7 @@ const createCreator = (req, res) => {
   const query = 'INSERT INTO creators (name, email, phone, address) VALUES (?, ?, ?, ?)';
   db.query(query, [name, email, phone, address], (err, result) => {
     if (err) {
+      console.error('Create creator error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     res.status(201).json({ id: result.insertId, name, email, phone, address });
@@ -41,6 +44,7 @@ const updateCreator = (req, res) => {
   const query = 'UPDATE creators SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?';
   db.query(query, [name, email, phone, address, id], (err, result) => {
     if (err) {
+      console.error('Update creator error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (result.affectedRows === 0) {
@@ -55,6 +59,7 @@ const deleteCreator = (req, res) => {
   const query = 'DELETE FROM creators WHERE id = ?';
   db.query(query, [id], (err, result) => {
     if (err) {
+      console.error('Delete creator error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
     if (result.affectedRows === 0) {

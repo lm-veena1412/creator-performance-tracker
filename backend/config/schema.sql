@@ -1,6 +1,4 @@
--- Create database
-CREATE DATABASE IF NOT EXISTS creator_tracker;
-USE creator_tracker;
+
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

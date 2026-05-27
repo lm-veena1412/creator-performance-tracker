@@ -66,6 +66,7 @@ const register = (req, res) => {
   const query = 'SELECT * FROM users WHERE username = ?';
   db.query(query, [username], async (err, results) => {
     if (err) {
+      console.error('Register check user error:', err);
       return res.status(500).json({ message: 'Database error' });
     }
 
@@ -80,6 +81,7 @@ const register = (req, res) => {
       const insertQuery = 'INSERT INTO users (username, password_hash) VALUES (?, ?)';
       db.query(insertQuery, [username, password_hash], (err, result) => {
         if (err) {
+          console.error('Register insert user error:', err);
           return res.status(500).json({ message: 'Database error' });
         }
 
@@ -98,6 +100,7 @@ const register = (req, res) => {
         });
       });
     } catch (error) {
+      console.error('Register server error:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
