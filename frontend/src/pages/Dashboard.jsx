@@ -31,9 +31,9 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [statsRes, logsRes, monthlyRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/performance/stats'),
-        axios.get('http://localhost:5000/api/performance'),
-        axios.get('http://localhost:5000/api/performance/monthly-stats')
+        axios.get(`${import.meta.env.VITE_API_URL}/api/performance/stats`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/performance`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/performance/monthly-stats`)
       ]);
       
       setStats(statsRes.data);
@@ -49,8 +49,8 @@ const Dashboard = () => {
   const handleViewCreator = async (creatorId) => {
     try {
       const [creatorRes, logsRes] = await Promise.all([
-        axios.get(`http://localhost:5000/api/creators/${creatorId}`),
-        axios.get(`http://localhost:5000/api/performance/creator/${creatorId}`)
+        axios.get(`${import.meta.env.VITE_API_URL}/api/creators/${creatorId}`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/performance/creator/${creatorId}`)
       ]);
       
       setSelectedCreator({
@@ -69,7 +69,7 @@ const Dashboard = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/performance/${logId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/performance/${logId}`);
       fetchDashboardData();
     } catch (error) {
       console.error('Error deleting performance log:', error);

@@ -36,7 +36,7 @@ const EditLogModal = ({ isOpen, onClose, log, onSuccess }) => {
     setLoading(true);
 
     try {
-      await axios.put(`http://localhost:5000/api/performance/${log.id}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/performance/${log.id}`, {
         provided_link: formData.providedLink || null,
         posted_link: formData.postedLink || null,
         views_count: parseInt(formData.views) || 0
