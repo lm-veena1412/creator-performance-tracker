@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker-xxxx.onrender.com'}/api/auth/login`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/auth/login`, {
         username,
         password
       });
