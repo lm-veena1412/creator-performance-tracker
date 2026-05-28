@@ -34,14 +34,14 @@ const AddLogModal = ({ isOpen, onClose, onSuccess }) => {
       let creatorId;
       
       // Check if creator already exists by name
-      const creatorsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/creators`);
+      const creatorsRes = await axios.get(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/creators`);
       const existingCreator = creatorsRes.data.find(c => c.name.toLowerCase() === formData.creatorName.toLowerCase());
       
       if (existingCreator) {
         creatorId = existingCreator.id;
       } else {
         // Create new creator
-        const creatorRes = await axios.post(`${import.meta.env.VITE_API_URL}/api/creators`, {
+        const creatorRes = await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/creators`, {
           name: formData.creatorName,
           email: formData.creatorEmail || null,
           phone: formData.creatorPhone || null,
@@ -51,7 +51,7 @@ const AddLogModal = ({ isOpen, onClose, onSuccess }) => {
       }
 
       // Create performance log
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/performance`, {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/performance`, {
         creator_id: creatorId,
         provided_link: formData.providedLink || null,
         posted_link: formData.postedLink || null,
