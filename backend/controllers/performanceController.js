@@ -149,6 +149,29 @@ const getMonthlyStats = (req, res) => {
     res.json(results);
   });
 };
+const getCreatorMonthlyDetails = (req, res) => {
+  const query = `
+    SELECT 
+      c.id as creator_id,
+      c.name as creator_name,
+      DATE_FORMAT(pl.date_logged, '%Y-%m') as month,
+      COALESCE(SUM(pl.views_count), 0) as total_views,
+      COUNT(pl.id) as posts_count
+    FROM performance_logs pl
+    JOIN creators c ON pl.creator_id = c.id
+    WHERE pl.date_logged IS NOT NULL
+    GROUP BY c.id, c.name, DATE_FORMAT(pl.date_logged, '%Y-%m')
+    ORDER BY month DESC, total_views DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Creator monthly details error:', err);
+      return res.status(500).json({ message: 'Database error fetching monthly details' });
+    }
+    res.json(results);
+  });
+};
 
 module.exports = {
   getAllPerformanceLogs,
@@ -158,5 +181,6 @@ module.exports = {
   updatePerformanceLog,
   deletePerformanceLog,
   getDashboardStats,
-  getMonthlyStats
+  getMonthlyStats,
+  getCreatorMonthlyDetails
 };

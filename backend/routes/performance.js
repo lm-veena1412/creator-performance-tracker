@@ -9,9 +9,11 @@ const {
   updatePerformanceLog,
   deletePerformanceLog,
   getDashboardStats,
-  getMonthlyStats
+  getMonthlyStats,
+  getCreatorMonthlyDetails
 } = require('../controllers/performanceController');
 
+router.get('/creator-monthly-stats', authMiddleware, getCreatorMonthlyDetails);
 router.get('/stats', authMiddleware, getDashboardStats);
 router.get('/monthly-stats', authMiddleware, getMonthlyStats);
 router.get('/', authMiddleware, getAllPerformanceLogs);

@@ -1,254 +1,146 @@
-import { useState } from 'react';
-import { X, User, Link as LinkIcon, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { X } from 'lucide-react';
 
 const AddLogModal = ({ isOpen, onClose, onSuccess }) => {
+  const [creators, setCreators] = useState([]);
+  const [loadingCreators, setLoadingCreators] = useState(true);
+  
   const [formData, setFormData] = useState({
-    creatorName: '',
-    creatorEmail: '',
-    creatorPhone: '',
-    creatorAddress: '',
-    providedLink: '',
-    postedLink: '',
-    views: ''
+    creator_id: '',
+    provided_link: '',
+    posted_link: '',
+    views_count: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  if (!isOpen) return null;
+  // Whenever the modal opens, fetch the latest list of creators for the dropdown
+  useEffect(() => {
+    if (isOpen) {
+      fetchCreators();
+    }
+  }, [isOpen]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const fetchCreators = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/creators`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCreators(res.data);
+      // Auto-select the first creator in the list if they exist
+      if (res.data.length > 0) {
+        setFormData(prev => ({ ...prev, creator_id: res.data[0].id }));
+      }
+    } catch (error) {
+      console.error('Error fetching creators for dropdown:', error);
+    } finally {
+      setLoadingCreators(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
     try {
-      // First, create or find the creator
-      let creatorId;
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/performance`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       
-      // Check if creator already exists by name
-      const creatorsRes = await axios.get(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/creators`);
-      const existingCreator = creatorsRes.data.find(c => c.name.toLowerCase() === formData.creatorName.toLowerCase());
-      
-      if (existingCreator) {
-        creatorId = existingCreator.id;
-      } else {
-        // Create new creator
-        const creatorRes = await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/creators`, {
-          name: formData.creatorName,
-          email: formData.creatorEmail || null,
-          phone: formData.creatorPhone || null,
-          address: formData.creatorAddress || null
-        });
-        creatorId = creatorRes.data.id;
-      }
-
-      // Create performance log
-      await axios.post(`${import.meta.env.VITE_API_URL || 'https://creator-performance-tracker.onrender.com'}/api/performance`, {
-        creator_id: creatorId,
-        provided_link: formData.providedLink || null,
-        posted_link: formData.postedLink || null,
-        views_count: parseInt(formData.views) || 0
-      });
-
-      // Reset form and close modal
-      setFormData({
-        creatorName: '',
-        creatorEmail: '',
-        creatorPhone: '',
-        creatorAddress: '',
-        providedLink: '',
-        postedLink: '',
-        views: ''
-      });
-      
-      onSuccess();
-      onClose();
+      // Reset form and close
+      setFormData({ creator_id: '', provided_link: '', posted_link: '', views_count: '' });
+      onSuccess(); // Refresh the table behind the modal
+      onClose();   // Close the modal
     } catch (error) {
       console.error('Error creating log:', error);
-      setError(error.response?.data?.message || 'Failed to create performance log');
-    } finally {
-      setLoading(false);
+      alert('Failed to save log. Make sure you selected a creator.');
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={onClose}
-        ></div>
+  if (!isOpen) return null;
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Add Performance Log</h3>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
+  return (
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+          <h2 className="text-xl font-bold text-gray-800">Add Performance Log</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          
+          {/* THE MAGIC DROPDOWN */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Creator *</label>
+            <select
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+              value={formData.creator_id}
+              onChange={(e) => setFormData({...formData, creator_id: e.target.value})}
+              disabled={loadingCreators}
             >
-              <X className="h-6 w-6" />
+              <option value="" disabled>-- Select a Creator --</option>
+              {creators.map(creator => (
+                <option key={creator.id} value={creator.id}>
+                  {creator.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Provided Link (Original Source)</label>
+            <input 
+              type="url"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              value={formData.provided_link}
+              onChange={(e) => setFormData({...formData, provided_link: e.target.value})}
+              placeholder="https://drive.google.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Posted Link (Live Post)</label>
+            <input 
+              type="url"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              value={formData.posted_link}
+              onChange={(e) => setFormData({...formData, posted_link: e.target.value})}
+              placeholder="https://youtube.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Views Generated *</label>
+            <input 
+              type="number" required min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              value={formData.views_count}
+              onChange={(e) => setFormData({...formData, views_count: e.target.value})}
+              placeholder="e.g. 15000"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm"
+            >
+              Save Log
             </button>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Creator Details Section */}
-              <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Creator Details
-                </h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Creator Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="creatorName"
-                      value={formData.creatorName}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter creator name"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="creatorEmail"
-                        value={formData.creatorEmail}
-                        onChange={handleChange}
-                        className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="creator@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone
-                      </label>
-                      <input
-                        type="text"
-                        name="creatorPhone"
-                        value={formData.creatorPhone}
-                        onChange={handleChange}
-                        className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="+1 234 567 8900"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address
-                    </label>
-                    <textarea
-                      name="creatorAddress"
-                      value={formData.creatorAddress}
-                      onChange={handleChange}
-                      rows="2"
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Creator's address"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Log Section */}
-              <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5" />
-                  Performance Log Details
-                </h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Provided Link
-                    </label>
-                    <input
-                      type="url"
-                      name="providedLink"
-                      value={formData.providedLink}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com/provided-link"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Posted Link
-                    </label>
-                    <input
-                      type="url"
-                      name="postedLink"
-                      value={formData.postedLink}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com/posted-link"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Views
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="number"
-                        name="views"
-                        value={formData.views}
-                        onChange={handleChange}
-                        min="0"
-                        className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Saving...' : 'Save Log'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   );
