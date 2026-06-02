@@ -68,9 +68,12 @@ const createPerformanceLog = (req, res) => {
 
 const updatePerformanceLog = (req, res) => {
   const { id } = req.params;
-  const { creator_id, provided_link, posted_link, views_count } = req.body;
-  const query = 'UPDATE performance_logs SET creator_id = ?, provided_link = ?, posted_link = ?, views_count = ? WHERE id = ?';
-  db.query(query, [creator_id, provided_link, posted_link, views_count, id], (err, result) => {
+  const { provided_link, posted_link, views_count } = req.body;
+  
+  // Notice creator_id is completely gone from this query!
+  const query = 'UPDATE performance_logs SET provided_link = ?, posted_link = ?, views_count = ? WHERE id = ?';
+  
+  db.query(query, [provided_link, posted_link, views_count, id], (err, result) => {
     if (err) {
       console.error('Update performance log error:', err);
       return res.status(500).json({ message: 'Database error' });
@@ -81,7 +84,6 @@ const updatePerformanceLog = (req, res) => {
     res.json({ message: 'Performance log updated successfully' });
   });
 };
-
 const deletePerformanceLog = (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM performance_logs WHERE id = ?';

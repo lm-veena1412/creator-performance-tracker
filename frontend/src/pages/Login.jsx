@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link} from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, User } from 'lucide-react';
+
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -90,7 +91,7 @@ const Login = () => {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Don't have an account? Contact your administrator.</p>
+          <p>Don't have an account? <Link to="/register" className="text-blue-600 font-semibold hover:underline">Sign up here</Link></p>
         </div>
       </div>
     </div>
